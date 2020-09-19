@@ -1,0 +1,8 @@
+{
+    "name": "cov19_indicator",
+    "stubs": {},
+    "dev-packages": {
+        "micropy-cli": "*"
+    },
+    "packages": {}
+}

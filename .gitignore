@@ -1,0 +1,8 @@
+wifi.ini
+.micropy
+tests
+*.bin
+Pipfile*
+*.code-workspace
+cases.log
+debug.log
