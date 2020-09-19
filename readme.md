@@ -5,7 +5,7 @@ C19はその名が示唆する通り、新型コロナウィルスの日々の�
 
 今回はMicroPythonがどれだけ使えるか評価するため、コーディングはすべてMicroPythonにて行い、新型コロナウィルスの感染者数はhttps://github.com/ryo-ma/covid19-japan-web-apiより取得しています。ただし現在使っているAPIでは更新が1日遅れになるため、別のAPIに今後変更するかもしれません。 To evaluate the MicroPython, this project was completely coded by MicroPython. Daily infections number is fetched from https://github.com/ryo-ma/covid19-japan-web-api. However I might change the API in the future because current API only returns the number two days old.
 
-![Front](https://github.com/yuskegoto/C19/blob/master/pics/front.jpg?raw=true)
+![Front](https://raw.githubusercontent.com/yuskegoto/C19/master/pics/front.jpeg)
 
 ## 構成機器 Components：
 - M5StackBasic
