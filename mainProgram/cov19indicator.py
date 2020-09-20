@@ -10,8 +10,8 @@ LOG_FILE = 'debug.log'
 CASE_LOG = 'cases.log'
 DUMMY_DATA = '20200913,22853,100'
 
-URL = "https://covid19-japan-web-api.now.sh/api/v1/prefectures"
 # URL = "https://covid19-japan-web-api.now.sh/api/v1/total"
+URL = "https://covid19-japan-web-api.now.sh/api/v1/prefectures"
 
 ######################### Display Config #######################
 import ili9341
@@ -26,7 +26,7 @@ TEXT_X = 160
 TEXT_Y = 120
 
 ######################### Update behaviour #######################
-TIMESTAMP_OFFSET = 4 # 3: hour, 4: min
+TIMESTAMP_OFFSET = 3 # 3: hour, 4: min
 SLEEP_LENGTH_sec = 1
 is_time_set = False
 
@@ -38,7 +38,7 @@ from a4988 import A4988
 stepPin = Pin(16)
 dirPin = Pin(17)
 
-stepper = A4988(stepPin, dirPin, 1000, 0, 0, pulse_width_us = 900, scale = 100)
+stepper = A4988(stepPin, dirPin, 1000, 0, 0, pulse_width_us = 900, scale = 200)
 stepper.wind(10)
 stepper.wind(-10)
 
