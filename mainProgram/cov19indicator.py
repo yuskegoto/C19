@@ -8,7 +8,7 @@ import gc
 LOG_OUT = False
 LOG_FILE = 'debug.log'
 CASE_LOG = 'cases.log'
-DUMMY_DATA = '20200913,22853,100'
+DUMMY_DATA = '20200929,25335'
 
 # URL = "https://covid19-japan-web-api.now.sh/api/v1/total"
 URL = "https://covid19-japan-web-api.now.sh/api/v1/prefectures"
@@ -258,19 +258,41 @@ def split_list(l, s):
 
 ########################## Parse JSON and extract data from Tokyo ##################
 def extract_tokyo_data(dataStream):
-    # infection_data_str = str(dataStream)[12:-2]
-    infection_data_str = dataStream.decode()
-    dataStream = ""
+    # # infection_data_str = str(dataStream)[12:-2]
+    # infection_data_str = dataStream.decode()
+    # dataStream = ""
 
-    gc.collect()  # garbage collector
-    # gc.threshold(gc.mem_free() // 4 + gc.mem_alloc())
+    # gc.collect()  # garbage collector
+    # # gc.threshold(gc.mem_free() // 4 + gc.mem_alloc())
+    # print(gc.mem_free())
+    # infection_data = infection_data_str.split('},\n  {')
+    # infection_data_str = ""
+    # gc.collect()  # garbage collector
+    # print(gc.mem_free())
+    # if len(infection_data) == 47:   #Tokyo's data is 47th in JSON
+    #     infection_data_tokyo = infection_data[12]
+    #     infection_data = ""
+    #     gc.collect()
+    #     print(gc.mem_free())
 
-    infection_data = infection_data_str.split('},\n  {')
-    if len(infection_data) == 47:   #Tokyo's data is 47th in JSON
+    #     import ujson
+    #     return ujson.loads('{' + infection_data_tokyo + '}')
+    #     # return ujson.loads('{' + infection_data[12] + '}')
+    # else:
+    #     return {'cases':0, 'last_updated': {'cases_date':0}}
+    try:
+        infection_data_tokyo = dataStream.decode().split('},\n  {')[12]     #Tokyo is 12th in Json data
+        # print(infection_data_tokyo)
+        dataStream = ""
+
+        gc.collect()  # garbage collector
+        gc.threshold(gc.mem_free() // 4 + gc.mem_alloc())
         import ujson
-        return ujson.loads('{' + infection_data[12] + '}')
-    else:
-        return ""
+        return ujson.loads('{' + infection_data_tokyo + '}')
+    except Exception as e:
+        print("Error: {0}\n".format(e))
+        debug_log("Error on data extraction: {0}\n".format(e))
+        return {'cases':0, 'last_updated': {'cases_date':0}}
 
 def write_dummy_data():
     d = open('cases.log', 'w')
@@ -280,33 +302,79 @@ def write_dummy_data():
 
 ########################## Check daily infections and compares to the log data ##################
 def update_daily_infections(date, cases):
-    print("incoming data: {}, {}".format(date, cases))
-    dailyCases = 0
     import os
+
+    if type(date) != int:
+        date = int(date)
+    if type(cases) != int:
+        cases = int(cases)
+    print("incoming data: {}, {}".format(date, cases))
+
+    dailyCases = 0
+    date_log = 0
+    # date_1_log = 0
+    cases_log = 0
+    cases_1_log = 0
     if CASE_LOG in os.listdir():
         with open(CASE_LOG, 'r+') as f:
             cases_text = f.readline()
-            if len(cases_text.split(',')) == 3:
-                date_log, cases_log, dailyCases_log = cases_text.split(',')
-                print("log: {}, {}, {}".format(date_log, cases_log, dailyCases_log))
-                cases_log = int(cases_log)
-                date_log = int(date_log)
-                dailyCases_log = int(dailyCases_log)
-                dailyCases = dailyCases_log
+            print("read from file: " + cases_text)
+            while cases_text != '':
+                # if len(cases_text.split(',')) == 3:
+                #     date_log, cases_log, dailyCases_log = cases_text.split(',')
+                #     print("log: {}, {} {}".format(date_log, cases_log, dailyCases_log))
+                #     dailyCases_log = int(dailyCases_log)
+                #     dailyCases = dailyCases_log
 
-                # when log file date or case have changed, updates logfile data
-                if (date != date_log) or (cases != cases_log):
-                    print("updated log file: {}, {}".format(date, cases))
+                #     # when log file date or case have changed, updates logfile data
+                #     if (date == date_log) and (cases != cases_log):
+                #         print("updated log file: {}, {}".format(date, cases))
+                        
+                #         if cases >= cases_log:
+                #             dailyCases = cases - cases_log
+                #             if date == date_log:
+                #                 dailyCases += dailyCases_log    
+                #         # save new data
+                #         f.seek(0)
+                #         f.write(str(date) + ',' + str(cases) + ',' + str(dailyCases))
+                if len(cases_text.split(',')) == 2:
+                    date_log, cases_log = cases_text.split(',')
+                    print("log: {}, {}".format(date_log, cases_log))
+                    cases_log = int(cases_log)
+                    date_log = int(date_log)
                     
-                    if cases >= cases_log:
-                        dailyCases = cases - cases_log
-                        if date == date_log:
-                            dailyCases += dailyCases_log    
-                    # save new data
-                    f.seek(0)
-                    f.write(str(date) + ',' + str(cases) + ',' + str(dailyCases))
+                    # add new line
+                    # if date > date_log:
+                    #     f.write(str(date) + ',' + str(cases) + '\n')
+                    #     break
+                    if date == date_log:
+                        print("date matched")
+                        if cases > cases_log:
+                                print("overwrite cases")
+                                f.seek( -len(cases_text), 1)  # move back relatively, and overwrite
+                                f.write(str(date) + ',' + str(cases) + '\n')
+                        break
+                    else:
+                        print("date not match")
+                        # look further for the new date
+                        # date_1_log = date_log
+                        cases_1_log = cases_log
+                        cases_text = f.readline()
+                else:
+                    print("case log file wrong format" + cases_text)
+                    break
+            if date > date_log:     #add new day & case
+                print("new line added")
+                f.write(str(date) + ',' + str(cases) + '\n')
+        print("{}, {}, {}, {}, {}".format(date, date_log, cases, cases_log, cases_1_log))
+        if date != date_log:    # if the date_log was not today
+            dailyCases = cases - cases_log
+        else:
+            dailyCases = cases - cases_1_log
     # if there is no log file available
     else:
+        print("case log file not found")
+        debug_log("case log not founnd")
         write_dummy_data()
         dailyCases = 100
     print("daily cases: {}".format(dailyCases))
@@ -319,15 +387,15 @@ def check_update():
     gc.threshold(gc.mem_free() // 4 + gc.mem_alloc())
 
     if connect_network():
-        if set_networktime():            
+        if set_networktime():
             infection_data = extract_tokyo_data(updatePic_sockets(URL))
 
             gc.collect()  # garbage collector
             gc.threshold(gc.mem_free() // 4 + gc.mem_alloc())
 
             # print(type(infection_data))
-    #         print(infection_data['cases'])
-    #         print(infection_data['last_updated']['cases_date'])
+            # print(infection_data['cases'])
+            # print(infection_data['last_updated']['cases_date'])
             dailyInfections = update_daily_infections(
                 infection_data['last_updated']['cases_date'], infection_data['cases'])
             
@@ -356,7 +424,11 @@ def check_button_events():
     return
 
 ################### init sequence ##################################
-display.fill(COLOR565_INACTIVE)
+# display.fill(COLOR565_INACTIVE)
+for i in range(5):
+    check_button_events()
+    time.sleep(SLEEP_LENGTH_sec)
+
 timeStamp = time.localtime()[TIMESTAMP_OFFSET] -1 #extract hour
 
 ########################### Main loop ################################
