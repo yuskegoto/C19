@@ -30,6 +30,11 @@ TIMESTAMP_OFFSET = 3 # 3: hour, 4: min
 SLEEP_LENGTH_sec = 1
 is_time_set = False
 
+######################### Button Config #######################
+btnA = Pin(39, Pin.IN, Pin.PULL_UP)
+btnB = Pin(38, Pin.IN, Pin.PULL_UP)
+btnC = Pin(37, Pin.IN, Pin.PULL_UP)
+
 ######################### Stepper Config #######################
 # custom stepper driver
 from a4988 import A4988
@@ -38,14 +43,10 @@ from a4988 import A4988
 stepPin = Pin(16)
 dirPin = Pin(17)
 
-stepper = A4988(stepPin, dirPin, 1000, 0, 0, pulse_width_us = 900, scale = 200)
+stepper = A4988(stepPin, dirPin, btnB, 1000, 0, 0, pulse_width_us = 900, scale = 200)
 stepper.wind(10)
 stepper.wind(-10)
 
-######################### Button Config #######################
-btnA = Pin(39, Pin.IN, Pin.PULL_UP)
-btnB = Pin(38, Pin.IN, Pin.PULL_UP)
-btnC = Pin(37, Pin.IN, Pin.PULL_UP)
 
 ######################### WIFI connection sequence #######################
 #  copied from here, TQ!
@@ -301,7 +302,8 @@ def write_dummy_data():
     return
 
 ########################## Check daily infections and compares to the log data ##################
-def update_daily_infections(date, cases):
+# if date == cases == 0, this function will return newest daily infections
+def get_daily_infections(date, cases):
     import os
 
     if type(date) != int:
@@ -337,6 +339,9 @@ def update_daily_infections(date, cases):
                 #         # save new data
                 #         f.seek(0)
                 #         f.write(str(date) + ',' + str(cases) + ',' + str(dailyCases))
+                if cases_log != 0:
+                    cases_1_log = cases_log
+                
                 if len(cases_text.split(',')) == 2:
                     date_log, cases_log = cases_text.split(',')
                     print("log: {}, {}".format(date_log, cases_log))
@@ -358,7 +363,7 @@ def update_daily_infections(date, cases):
                         print("date not match")
                         # look further for the new date
                         # date_1_log = date_log
-                        cases_1_log = cases_log
+                        # cases_1_log = cases_log
                         cases_text = f.readline()
                 else:
                     print("case log file wrong format" + cases_text)
@@ -367,7 +372,9 @@ def update_daily_infections(date, cases):
                 print("new line added")
                 f.write(str(date) + ',' + str(cases) + '\n')
         print("{}, {}, {}, {}, {}".format(date, date_log, cases, cases_log, cases_1_log))
-        if date != date_log:    # if the date_log was not today
+        if date == 0 and cases == 0:
+            dailyCases = cases_log - cases_1_log 
+        elif date != date_log:    # if the date_log was not today
             dailyCases = cases - cases_log
         else:
             dailyCases = cases - cases_1_log
@@ -396,7 +403,7 @@ def check_update():
             # print(type(infection_data))
             # print(infection_data['cases'])
             # print(infection_data['last_updated']['cases_date'])
-            dailyInfections = update_daily_infections(
+            dailyInfections = get_daily_infections(
                 infection_data['last_updated']['cases_date'], infection_data['cases'])
             
             display.fill(COLOR565_INACTIVE)
@@ -429,11 +436,14 @@ for i in range(5):
     check_button_events()
     time.sleep(SLEEP_LENGTH_sec)
 
+dailyInfections = get_daily_infections(0, 0)  # 0, 0 to get newest daily infections
+print("initial daily infection: {}".format(dailyInfections))
+stepper.pos = dailyInfections   # put daily infection value to the motor position
+
 timeStamp = time.localtime()[TIMESTAMP_OFFSET] -1 #extract hour
 
 ########################### Main loop ################################
 while(1):
-
     check_button_events()
 
     if time.localtime()[TIMESTAMP_OFFSET] != timeStamp:

@@ -5,7 +5,7 @@ from time import sleep_us
 # dirPin = Pin(17)
 
 class A4988:
-    def __init__(self, step_pin, dir_pin, maxpos, minpos, init_pos, pulse_width_us = 1000, scale = 100):
+    def __init__(self, step_pin, dir_pin, halt_pin, maxpos, minpos, init_pos, pulse_width_us = 1000, scale = 100):
         self.maxpos = maxpos
         self.minpos = minpos
         self.pos = init_pos
@@ -15,8 +15,10 @@ class A4988:
         self.dir.init(self.dir.OUT, value= 0)
         self.scale = scale #steps per unit
         self.pulseWidth = pulse_width_us
+        self.haltPin = halt_pin
         return
 
+    #move stepper to specified position and inclement motor position
     def moveto(self, nextPos):
         if nextPos > self.maxpos:
             nextPos = self.maxpos
@@ -30,9 +32,12 @@ class A4988:
         moveSteps = abs(nextPos - self.pos) * self.scale
         for i in range(moveSteps):
             self.onePulse()
+            if self.haltPin.value() == 0:
+                break
         self.pos = nextPos
         return
-    
+
+    #move stepper but not inclement motor position    
     def wind(self, inclement):
         if inclement > 0:
             self.dir.on()
@@ -42,6 +47,7 @@ class A4988:
         moveSteps = abs(inclement - self.pos)
         for i in range(moveSteps):
             self.onePulse()
+            break
         return
 
     def onePulse(self):

@@ -5,7 +5,7 @@
 #webrepl.start()
 try:
     import cov19indicator
-# # when something happens, write out error status and try to reboot
+# when something happens, write out error status and try to reboot
 except Exception as e:
     # pass
     import time
